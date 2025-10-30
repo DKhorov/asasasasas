@@ -1,0 +1,41 @@
+ <Button
+             type="submit"
+             variant="contained"
+             fullWidth
+             sx={{
+               borderRadius: '16px',
+               fontFamily: "sf",
+               fontWeight: 'bold',
+               display: 'flex',
+               flexDirection: 'column',
+               fontSize: '18px',
+               py: 1.5,
+               background: authStatus === 'loading' ? 'rgba(48, 54, 61, 0.7)' : '#ffffffff',
+               color: 'black',
+               boxShadow: '0 2px 8px 0 rgba(0,0,0,0.20)',
+               textTransform: 'none',
+               transition: 'background 0.7s, box-shadow 0.2s',
+               mt: 0,
+               mb: 3,
+               '&:hover': {
+                 background: '#a8a8a8ff',
+                 boxShadow: '0 4px 16px 0 rgba(0,0,0,0.25)',
+               },
+             }}
+             disabled={authStatus === 'loading'}
+             onClick={handleSubmit}
+           >
+                                     <Typography color="gray" sx={{ mb: 0, textAlign: 'center', color: '#a8a8a8ff' }}>Войти через</Typography>
+
+             {authStatus === 'loading' ? (
+               <span className="loader" style={{ display: 'inline-block', width: 22, height: 22 }}>
+                 <svg viewBox="0 0 50 50" style={{ width: 22, height: 22 }}>
+                   <circle cx="25" cy="25" r="20" fill="none" stroke="#fff" strokeWidth="5" strokeDasharray="31.4 31.4" strokeLinecap="round">
+                     <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite" />
+                   </circle>
+                 </svg>
+               </span>
+             ) : (
+               'Proffessional Picasso'
+             )}
+           </Button>

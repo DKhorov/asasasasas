@@ -1,0 +1,213 @@
+import React, { useState } from 'react';
+import { Box, Typography, IconButton } from '@mui/material';
+import PostHeader from './PostHeader';
+import PostText from './PostText';
+import PostPhoto from './PostPhoto';
+import CommentSection from '../../../components/CommentSection';
+import axios from '../../../system/axios';
+import { FiMessageSquare, FiThumbsUp, FiThumbsDown } from "react-icons/fi";
+
+const PostWithComments = ({ post, onDelete, onPostUpdate }) => {
+    const [hovered, setHovered] = useState(null); // 'like' | 'dislike' | null
+
+  const safePost = {
+    ...post,
+    user: post?.user || {},
+    likes: { count: post.likes?.count || 0, users: post.likes?.users || [] },
+    dislikes: { count: post.dislikes?.count || 0, users: post.dislikes?.users || [] },
+    commentsCount: post?.commentsCount || 0
+  };
+
+  const [localLikes, setLocalLikes] = useState(safePost.likes.count);
+  const [localDislikes, setLocalDislikes] = useState(safePost.dislikes.count);
+  const [localCommentsCount, setLocalCommentsCount] = useState(safePost.commentsCount);
+  const [showComments, setShowComments] = useState(false);
+
+  const userId = localStorage.getItem('userId');
+
+  const [userReaction, setUserReaction] = useState(() => {
+    if (!userId) return null;
+    if (safePost.likes.users.includes(userId)) return 'like';
+    if (safePost.dislikes.users.includes(userId)) return 'dislike';
+    return null;
+  });
+
+  const handleReaction = async (type) => {
+    if (type === 'like') {
+      setLocalLikes(prev => userReaction === 'like' ? prev - 1 : prev + 1);
+      if (userReaction === 'dislike') setLocalDislikes(prev => prev - 1);
+      setUserReaction(userReaction === 'like' ? null : 'like');
+    } else {
+      setLocalDislikes(prev => userReaction === 'dislike' ? prev - 1 : prev + 1);
+      if (userReaction === 'like') setLocalLikes(prev => prev - 1);
+      setUserReaction(userReaction === 'dislike' ? null : 'dislike');
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || !safePost._id) return;
+
+      const endpoint = `posts/${safePost._id}/${type}`;
+      const response = await axios.post(endpoint, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data?.post) {
+        // сохраняем текущего пользователя, чтобы ник и значки не пропали
+        onPostUpdate({
+          ...response.data.post,
+          user: safePost.user
+        });
+      }
+    } catch (error) {
+      console.error(`Ошибка ${type}:`, error);
+      // откат состояния при ошибке
+      if (type === 'like') {
+        setLocalLikes(prev => userReaction === 'like' ? prev + 1 : prev - 1);
+        if (userReaction === 'dislike') setLocalDislikes(prev => prev + 1);
+      } else {
+        setLocalDislikes(prev => userReaction === 'dislike' ? prev + 1 : prev - 1);
+        if (userReaction === 'like') setLocalLikes(prev => prev + 1);
+      }
+      setUserReaction(userReaction);
+    }
+  };
+
+  const handleCommentClick = () => setShowComments(!showComments);
+
+  const handleCommentCountUpdate = (newCount) => {
+    if (onPostUpdate) {
+      onPostUpdate({
+        ...post,
+        commentsCount: newCount,
+        user: safePost.user // сохраняем пользователя
+      });
+    }
+    setLocalCommentsCount(newCount);
+  };
+
+  function getCommentsText(count) {
+    if (!count || count === 0) return 'Нет комментариев';
+    if (count % 10 === 1 && count % 100 !== 11) return `${count} комментарий`;
+    if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100)) return `${count} комментария`;
+    return `${count} комментариев`;
+  }
+
+  return (
+    <Box sx={{
+      backgroundColor: 'rgba(23, 23, 23, 1)',
+      borderRadius: 5,
+      mb: 0,
+      position: 'relative',
+      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+      p: 2,
+      pb: 1.5,
+      '&:hover': { boxShadow: '0 8px 25px rgba(0,0,0,0.2)' },
+    }}>
+      <PostHeader
+        post={post}
+        onDelete={onDelete}
+        onPostUpdate={onPostUpdate}
+        onCommentClick={handleCommentClick}
+      />
+
+      {post.imageUrl && <PostPhoto post={post} sx={{ mb: 1 }} />}
+
+     
+
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent:'space-between', mt: 2 ,ml:1,mb:1}}>
+        {/* Комментарии */}
+        <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={handleCommentClick}>
+          <FiMessageSquare 
+            style={{ fontSize: 28, color: showComments ? '#42a5f5' : 'rgba(84, 163, 247, 1)', marginRight: 8 }} 
+          />
+          <Typography sx={{ fontSize: '15px', color: showComments ? '#42a5f5' : 'rgba(84, 163, 247, 1)' }}>
+            {getCommentsText(localCommentsCount)}
+          </Typography>
+        </Box>
+
+        {/* Лайки и дизлайки */}
+       <Box sx={{ display: 'flex', alignItems: 'center' }}>
+      {/* LIKE */}
+      <Box
+        sx={{
+          width: '50px',
+          height: '50px',
+          borderRadius: '100px',
+          backgroundColor: 'rgba(66, 165, 245, 0.1)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          mr: 2,
+          position: 'relative',
+          cursor:'pointer'
+        }}
+        onClick={() => handleReaction('like')}
+        onMouseEnter={() => setHovered('like')}
+        onMouseLeave={() => setHovered(null)}
+      >
+        {hovered === 'like' ? (
+          <Typography sx={{ fontWeight: 'bold', color: '#42a5f5',fontSize:'20px' ,fontFamily:'sf',cursor:'pointer'}}>
+            {localLikes}
+          </Typography>
+        ) : (
+          <IconButton
+            size="small"
+            onClick={() => handleReaction('like')}
+            sx={{
+              color: userReaction === 'like' ? '#42a5f5' : 'rgba(209, 209, 209, 1)',
+              '&:hover': { backgroundColor: 'rgba(66, 165, 245, 0.1)' },
+            }}
+          >
+            <FiThumbsUp size={20} />
+          </IconButton>
+        )}
+      </Box>
+
+      {/* DISLIKE */}
+      <Box
+        sx={{
+          width: '50px',
+          height: '50px',
+          borderRadius: '100px',
+          backgroundColor: 'rgba(244, 67, 54, 0.1)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          position: 'relative',
+        }}
+        onMouseEnter={() => setHovered('dislike')}
+        onMouseLeave={() => setHovered(null)}
+      >
+        {hovered === 'dislike' ? (
+          <Typography sx={{ fontWeight: 'bold', color: '#f44336',fontSize:'20px' ,fontFamily:'sf' ,cursor:'pointer' }}>
+            {localDislikes}
+          </Typography>
+        ) : (
+          <IconButton
+            size="small"
+            onClick={() => handleReaction('dislike')}
+            sx={{
+              color: userReaction === 'dislike' ? '#f44336' : 'rgba(209, 209, 209, 1)',
+              '&:hover': { backgroundColor: 'rgba(244, 67, 54, 0.1)' },
+            }}
+          >
+            <FiThumbsDown size={20} />
+          </IconButton>
+        )}
+      </Box>
+    </Box>
+      </Box>
+
+      {showComments && (
+        <CommentSection
+          postId={post._id}
+          postAuthorId={post.user._id}
+          onCommentCountUpdate={handleCommentCountUpdate}
+        />
+      )}
+    </Box>
+  );
+};
+
+export default PostWithComments;
