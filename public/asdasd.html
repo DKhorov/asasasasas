@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AtomWiki — мини-энциклопедия</title>
+  <style>
+    :root{
+      --bg-1: rgb(32,32,32); /* основной фон */
+      --bg-2: rgb(27,27,27); /* карты/карточки */
+      --bg-3: rgb(36,36,36); /* акценты */
+      --text: #e6e6e6;
+      --muted: #b8b8b8;
+      --accent: #69c0ff;
+      --glass: rgba(255,255,255,0.03);
+      --radius: 12px;
+      --max-width: 1100px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    html,body{height:100%;}
+    body{
+      margin:0;
+      background: linear-gradient(180deg,var(--bg-1), var(--bg-2));
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      padding:32px 20px;
+      display:flex;justify-content:center;
+    }
+
+    .wrap{width:100%;max-width:var(--max-width);} 
+
+    header{
+      display:flex;align-items:center;gap:18px;margin-bottom:22px;
+    }
+
+    .logo{
+      width:68px;height:68px;border-radius:12px;background:linear-gradient(135deg,var(--bg-3),var(--bg-2));
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 18px rgba(0,0,0,0.6);
+    }
+    .logo h1{font-size:20px;margin:0;color:var(--accent);letter-spacing:1px}
+
+    .site-title{display:flex;flex-direction:column}
+    .site-title .main{font-size:20px;font-weight:700;margin:0}
+    .site-title .tag{font-size:12px;color:var(--muted);margin-top:2px}
+
+    .top-controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+    .search{background:var(--glass);border:1px solid rgba(255,255,255,0.03);padding:8px 12px;border-radius:10px;color:var(--text);min-width:220px}
+    .btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 12px;border-radius:10px;color:var(--text);cursor:pointer}
+    .btn.primary{background:linear-gradient(90deg,var(--accent),#57e0ff);color:#042331;border:none}
+
+    main{display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start}
+
+    nav.card{
+      background:rgba(255,255,255,0.02);padding:16px;border-radius:var(--radius);min-height:220px;border:1px solid rgba(0,0,0,0.3)
+    }
+    nav h3{margin:0 0 12px 0;font-size:14px}
+    .toc{display:flex;flex-direction:column;gap:8px}
+    .toc a{color:var(--muted);text-decoration:none;padding:8px;border-radius:8px}
+    .toc a:hover{background:rgba(255,255,255,0.02);color:var(--text)}
+
+    .content{background:rgba(255,255,255,0.02);padding:18px;border-radius:var(--radius);min-height:400px;border:1px solid rgba(0,0,0,0.3)}
+
+    .main-article{margin-bottom:18px}
+    .main-article h2{margin:0 0 6px 0}
+    .main-article p.lead{margin:0;color:var(--muted)}
+
+    .section{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); padding:14px;margin-top:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+    .section .meta{display:flex;gap:12px;align-items:center;margin-bottom:8px}
+    .section h3{margin:0}
+    .subtitle{color:var(--muted);font-size:13px}
+    .description{font-size:14px;color:var(--muted);margin:8px 0}
+    .date{font-size:12px;color:var(--muted)}
+    .section .body{margin:10px 0;line-height:1.6}
+    .notes{font-size:13px;color:var(--muted);background:rgba(255,255,255,0.01);padding:8px;border-radius:8px}
+    .trademark{font-size:12px;color:var(--muted);text-align:right;margin-top:8px;font-style:italic}
+
+    .section-controls{display:flex;gap:8px;margin-top:10px}
+    .small-btn{font-size:13px;padding:6px 8px}
+
+    .add-panel{margin-top:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:12px;border-radius:10px}
+    label{display:block;font-size:13px;color:var(--muted);margin-top:8px}
+    input[type=text], textarea, input[type=date]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:var(--text)}
+    textarea{min-height:120px;resize:vertical}
+
+    footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+
+    @media (max-width:900px){
+      main{grid-template-columns:1fr;}
+      .search{min-width:120px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo" aria-hidden="true"><h1>AW</h1></div>
+      <div class="site-title">
+        <div class="main">AtomWiki</div>
+        <div class="tag">Мини-энциклопедия — легко добавлять разделы</div>
+      </div>
+
+      <div class="top-controls">
+        <input id="q" class="search" placeholder="Поиск по заголовкам и тексту..." />
+        <button class="btn" id="exportBtn" title="Экспорт">Экспорт</button>
+        <button class="btn primary" id="addToggle">Добавить раздел</button>
+      </div>
+    </header>
+
+    <main>
+      <nav class="card" aria-label="Содержимое">
+        <h3>Разделы</h3>
+        <div class="toc" id="toc"></div>
+
+        <div class="add-panel" id="addPanel" style="display:none">
+          <h4 style="margin:0">Новый раздел</h4>
+          <label>Заголовок</label>
+          <input id="f_title" type="text" placeholder="Например: История" />
+          <label>Подзаголовок</label>
+          <input id="f_sub" type="text" placeholder="Краткий подзаголовок" />
+          <label>Краткое описание</label>
+          <input id="f_desc" type="text" placeholder="Короткая аннотация" />
+          <label>Дата добавления</label>
+          <input id="f_date" type="date" />
+          <label>Текст раздела</label>
+          <textarea id="f_body" placeholder="Полный текст раздела..."></textarea>
+          <label>Примечания</label>
+          <textarea id="f_notes" placeholder="Примечания, источники"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn primary" id="saveBtn">Сохранить раздел</button>
+            <button class="btn" id="cancelAdd">Отмена</button>
+          </div>
+        </div>
+      </nav>
+
+      <section class="content" id="content">
+        <article class="main-article">
+          <h2>Главная</h2>
+          <p class="lead">Добро пожаловать в AtomWiki — лёгкую и быструю систему заметок/энциклопедии. Добавляйте разделы через панель слева.</p>
+        </article>
+
+        <div id="sections"></div>
+
+        <footer>
+          © AtomWiki — Утверждено действующим руководством AtomGlide
+        </footer>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Простая клиентская логика: добавление/редактирование/удаление разделов + сохранение в localStorage
+// Простая клиентская логика: добавление/редактирование/удаление разделов + сохранение в localStorage
+(function(){
+  const tocEl = document.getElementById('toc');
+  const sectionsEl = document.getElementById('sections');
+  const addPanel = document.getElementById('addPanel');
+  const addToggle = document.getElementById('addToggle');
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelAdd = document.getElementById('cancelAdd');
+  const q = document.getElementById('q');
+  const exportBtn = document.getElementById('exportBtn');
+
+  function uid(){ return 's_' + Math.random().toString(36).slice(2, 9); }
+
+  function getData(){
+    try {
+      return JSON.parse(localStorage.getItem('atomwiki_sections') || '[]');
+    } catch(e) {
+      return [];
+    }
+  }
+
+  function saveData(data){
+    localStorage.setItem('atomwiki_sections', JSON.stringify(data));
+  }
+
+  function escapeHtml(t){
+    if(!t) return '';
+    return t.replace(/[&<>"]/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+    });
+  }
+
+  function renderAll(filter){
+    const data = getData();
+    sectionsEl.innerHTML = '';
+    tocEl.innerHTML = '';
+    const qstr = (filter || '').toLowerCase();
+
+    data.forEach((s, idx) => {
+      const hay = (s.title + ' ' + s.sub + ' ' + s.desc + ' ' + s.body + ' ' + s.notes).toLowerCase();
+      if(qstr && !hay.includes(qstr)) return;
+
+      // TOC
+      const a = document.createElement('a');
+      a.href = '#' + s.id;
+      a.textContent = (idx + 1) + '. ' + s.title;
+      a.onclick = () => {
+        document.getElementById(s.id).scrollIntoView({behavior:'smooth'});
+      };
+      tocEl.appendChild(a);
+
+      // Section card
+      const div = document.createElement('div');
+      div.className = 'section';
+      div.id = s.id;
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const h3 = document.createElement('h3');
+      h3.textContent = s.title;
+      const sub = document.createElement('div');
+      sub.className = 'subtitle';
+      sub.textContent = s.sub || '';
+      meta.appendChild(h3);
+      meta.appendChild(sub);
+      div.appendChild(meta);
+
+      if(s.desc){
+        const pdesc = document.createElement('div');
+        pdesc.className = 'description';
+        pdesc.textContent = s.desc;
+        div.appendChild(pdesc);
+      }
+
+      if(s.date){
+        const d = document.createElement('div');
+        d.className = 'date';
+        d.textContent = 'Дата добавления: ' + s.date;
+        div.appendChild(d);
+      }
+
+      const body = document.createElement('div');
+      body.className = 'body';
+      body.innerHTML = escapeHtml(s.body).replace(/\\n/g, '<br>');
+      div.appendChild(body);
+
+      if(s.notes){
+        const notes = document.createElement('div');
+        notes.className = 'notes';
+        notes.innerHTML = '<strong>Примечания:</strong><br>' + escapeHtml(s.notes).replace(/\\n/g, '<br>');
+        div.appendChild(notes);
+      }
+
+      const tm = document.createElement('div');
+      tm.className = 'trademark';
+      tm.textContent = 'Утверждено действующим руководством AtomGlide';
+      div.appendChild(tm);
+
+      const controls = document.createElement('div');
+      controls.className = 'section-controls';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn small-btn';
+      editBtn.textContent = 'Редактировать';
+      editBtn.onclick = () => { openEdit(s.id); };
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn small-btn';
+      delBtn.textContent = 'Удалить';
+      delBtn.onclick = () => {
+        if(confirm('Удалить раздел «' + s.title + '»?')) {
+          deleteSection(s.id);
+        }
+      };
+
+      controls.appendChild(editBtn);
+      controls.appendChild(delBtn);
+      div.appendChild(controls);
+      sectionsEl.appendChild(div);
+    });
+  }
+
+  function deleteSection(id){
+    const data = getData().filter(s => s.id !== id);
+    saveData(data);
+    renderAll(q.value);
+  }
+
+  // Add new
+  addToggle.addEventListener('click', () => {
+    addPanel.style.display = addPanel.style.display === 'none' ? 'block' : 'none';
+    if(addPanel.style.display === 'block'){
+      document.getElementById('f_title').value = '';
+      document.getElementById('f_sub').value = '';
+      document.getElementById('f_desc').value = '';
+      document.getElementById('f_date').value = new Date().toISOString().slice(0,10);
+      document.getElementById('f_body').value = '';
+      document.getElementById('f_notes').value = '';
+    }
+  });
+
+  cancelAdd.addEventListener('click', () => {
+    addPanel.style.display = 'none';
+  });
+
+  saveBtn.addEventListener('click', () => {
+    const obj = {
+      id: uid(),
+      title: document.getElementById('f_title').value.trim() || 'Без названия',
+      sub: document.getElementById('f_sub').value.trim(),
+      desc: document.getElementById('f_desc').value.trim(),
+      date: document.getElementById('f_date').value || (new Date()).toISOString().slice(0,10),
+      body: document.getElementById('f_body').value.trim(),
+      notes: document.getElementById('f_notes').value.trim()
+    };
+    const data = getData();
+    data.push(obj);
+    saveData(data);
+    renderAll(q.value);
+    addPanel.style.display = 'none';
+  });
+
+  function openEdit(id){
+    const data = getData();
+    const s = data.find(x => x.id === id);
+    if(!s) return;
+
+    addPanel.style.display = 'block';
+    document.getElementById('f_title').value = s.title;
+    document.getElementById('f_sub').value = s.sub;
+    document.getElementById('f_desc').value = s.desc;
+    document.getElementById('f_date').value = s.date;
+    document.getElementById('f_body').value = s.body;
+    document.getElementById('f_notes').value = s.notes;
+
+    const origText = saveBtn.textContent;
+    saveBtn.textContent = 'Обновить раздел';
+
+    const onSave = () => {
+      s.title = document.getElementById('f_title').value.trim() || 'Без названия';
+      s.sub = document.getElementById('f_sub').value.trim();
+      s.desc = document.getElementById('f_desc').value.trim();
+      s.date = document.getElementById('f_date').value || (new Date()).toISOString().slice(0,10);
+      s.body = document.getElementById('f_body').value.trim();
+      s.notes = document.getElementById('f_notes').value.trim();
+      saveData(data);
+      renderAll(q.value);
+      addPanel.style.display = 'none';
+      saveBtn.textContent = origText;
+      saveBtn.removeEventListener('click', onSave);
+    };
+    saveBtn.addEventListener('click', onSave);
+  }
+
+  // Search
+  q.addEventListener('input', () => {
+    renderAll(q.value);
+  });
+
+  // Export (JSON)
+  exportBtn.addEventListener('click', () => {
+    const data = getData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'atomwiki_export.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Initial sample
+  if(!localStorage.getItem('atomwiki_sections')){
+    const sample = [{
+      id:'s_sample1',
+      title:'История Atom',
+      sub:'Краткий обзор',
+      desc:'Небольшое описание раздела «История Atom».',
+      date: new Date().toISOString().slice(0,10),
+      body:'Здесь размещается основной текст раздела. Вы можете вставлять абзацы, списки и любые заметки. Для переноса строк используйте Enter.',
+      notes:'Источник: Внутренние документы.'
+    }];
+    saveData(sample);
+  }
+
+  // Render on load
+  renderAll();
+
+  // Импорт JSON (перетаскиванием)
+  window.addEventListener('dragover', e => e.preventDefault());
+  window.addEventListener('drop', e => {
+    e.preventDefault();
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(!f) return;
+    if(!confirm('Импортировать файл и добавить разделы из JSON?')) return;
+    const reader = new FileReader();
+    reader.onload = function(){
+      try {
+        const imported = JSON.parse(reader.result);
+        if(Array.isArray(imported)){
+          const cur = getData();
+          const merged = cur.concat(imported.map(it => ({ ...it, id: it.id || uid() })));
+          saveData(merged);
+          renderAll();
+          alert('Импорт завершён');
+        } else {
+          alert('Формат не распознан');
+        }
+      } catch(err){
+        alert('Ошибка при разборе JSON');
+      }
+    };
+    reader.readAsText(f);
+  });
+
+})();
+
+  </script>
+</body>
+</html>
