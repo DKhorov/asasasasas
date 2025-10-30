@@ -64,7 +64,7 @@ export default function AtomsClicker() {
 
   useEffect(() => {
     if (token) {
-      const newSocket = io('http://192.168.0.107:3001', {
+      const newSocket = io('https://atomglidedev.ru', {
         auth: { token },
         transports: ['websocket', 'polling'],
         reconnection: true,
